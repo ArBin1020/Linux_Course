@@ -1,0 +1,8 @@
+.vscode
+tmp
+*.csv
+*.png
+bench
+
+# w2_exp1
+perf_runner
