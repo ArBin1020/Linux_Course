@@ -27,14 +27,14 @@ python plot.py
 
 ## perf 
 ### perf_benchmark.c
-
-
 - 觀測事件說明
-    - cache-references      : 所有 LLC 存取次數（分母，用於計算 miss rate）
-    - cache-misses          : LLC miss 次數（= 需要去 DRAM 取資料）
-    - L1-dcache-load-misses : L1 data cache load miss（最敏感的近端指標）
-    - dTLB-load-misses      : data TLB miss（存取分散位址時的頁表查詢懲罰）
-    - instructions          : 總指令數（用於計算 MPKI = misses per kilo-inst）
+    - cache-references: 所有 LLC 存取次數
+    - cache-misses: LLC miss 次數
+    - L1-dcache-load-misses: L1 data cache 載入未命中次數
+    - cycles: 處理器執行的總時脈週期
+    - instructions: 總指令數
+    - dTLB-load-misses: Data TLB 發生未命中的次數
+    
 1. Exp 1 記憶體配置策略
     測量建立Linked List 時的記憶體管理開銷
     - Mode 0
@@ -46,26 +46,21 @@ python plot.py
     - Mode 0 (Sequential Pool Scan)
     - Mode 1 (Shuffled Pool Scan)
         使用 Fisher-Yates 演算法將節點索引打亂
-- usage:
-```bash
 
-./perf_runner <exp> <N> <mode> <reps>
-    # exp  = 1  Allocation Strategy
-    #     mode 0 = per-node malloc  (每次 alloc 一個節點)
-    #     mode 1 = memory pool      (單次 malloc 整塊記憶體)
-    # exp  = 2  Spatial Locality Scan
-    #     mode 0 = sequential pool  (next 指標循序連結 0→1→2→…)
-    #     mode 1 = shuffled pool    (next 指標以 Fisher-Yates 打亂)
-    # reps = 重複次數，放大 perf 事件計數，建議 Exp1 用 20，Exp2 用 50
-```
-
-單一使用
+單獨編譯與執行測試的方法
 ```bash
 gcc -O2 -I../../include perf_benchmark.c ../../src/list.c ../../src/array.c -o perf_runner
+
+./perf_runner <exp> <N> <mode> <reps>
+# exp: 1 (Allocation Strategy) 或 2 (Spatial Locality Scan)。
+# N: 節點總數量
+# mode: 依據 exp 選擇 0 或 1（定義如上）
+# reps: 迴圈重複次數。用於放大 perf 事件計數
 
 perf stat -r 3 \
     -e instructions, cache-references, cache-misses, L1-dcache-load-misses, dTLB-load-misses \
     -- ./perf_runner 1 1000000 0 20
+
 ```
 
 ### run_perf.sh
@@ -93,16 +88,22 @@ perf_exp2.png  — Exp2: Spatial Locality Scan
     - $10^6$
     - $10^8$
 
-- Y 軸
-    - instructions/element: 每次元素操作的指令數（反映演算法複雜度）
-    - LLC references:       每次元素操作的 Last-Level Cache 存取次數
-    - LLC misses:           需要到 DRAM 取資料的次數
-    - L1-dcache misses:     L1 快取未命中
-    - dTLB misses:          頁表查詢次數
-    - LLC miss rate (%):    cache_misses / cache_references × 100
+-X 軸:
+    資料規模 $N$
+    
+- Y 軸 (正規化)：
+    - Cycles / element: 完成單一元素操作所需耗費的硬體時脈週期
+    - Instructions / element: 每次元素操作的軟體指令數
+    - IPC (Instr. per Cycle): 每週期執行指令數
+    - LLC references / element: 每元素觸發的 LLC 存取請求次數
+    - LLC misses / element: 每元素必須向 DRAM 讀取資料的絕對次數
+    - L1-dcache misses / element: L1 快取未命中次數
+    - dTLB misses / element: 發生 Page Table Walk 的次數
+    - LLC miss rate (%): 公式為 $LLC\_miss\_rate\_pct = \left( \frac{cache\_misses}{cache\_references} \right) \times 100$
 
-### usage
+### 直接使用
 ```bash
+make
 sudo bash perf_run.sh
 python perf_plot.py
 ```
