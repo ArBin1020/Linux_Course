@@ -37,7 +37,7 @@ struct list_node *pool_alloc(list_pool_t *pool, int value) {
     return node;
 }
 
-/* ── Malloc-backed ────────────────────────────────────────────── */
+/* ── Malloc ────────────────────────────────────────────── */
 
 static struct list_node *create_node(int value) {
     struct list_node *node = malloc(sizeof(struct list_node));
@@ -73,7 +73,7 @@ void list_free(struct list_node *head) {
     }
 }
 
-/* ── Pool-backed ─────────────────────────────────────────────── */
+/* ── Pool ─────────────────────────────────────────────── */
 
 void list_append_unknown_tail_pool(struct list_node **head, int value, list_pool_t *pool) {
     struct list_node *node = pool_alloc(pool, value);
